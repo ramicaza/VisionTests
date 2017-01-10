@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-cap = cv2.VideoCapture("SampleCanny.mp4")
+cap = cv2.VideoCapture("Sample.mp4")
 
 while(True):
     # Capture frame-by-frame
