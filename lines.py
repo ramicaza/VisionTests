@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+
+# This was the original test in this repo
+
 import numpy as np
 import cv2
 
