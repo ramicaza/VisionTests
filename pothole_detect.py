@@ -4,23 +4,12 @@
 
 import cv2
 import numpy as np
+from time import time
 
 def filter_by_area(contours,thresh):
 	ret = []
 	for contour in contours:
 		if cv2.contourArea(contour) > thresh:
-			ret.append(contour)
-	return ret
-
-def filter_by_solidity(contours,thresh):
-	ret = []
-	for contour in contours:
-		area = cv2.contourArea(contour)
-		hull = cv2.convexHull(contour)
-		hull_area = cv2.contourArea(hull)
-		if area == 0 or hull_area == 0: continue 
-		solidity = float(area)/hull_area
-		if solidity > thresh:	
 			ret.append(contour)
 	return ret
 
@@ -36,31 +25,44 @@ def filter_by_ellipseness(contours,thresh):
 			ret.append(contour)
 	return ret
 
-camera = cv2.VideoCapture(0)
-while True:
-	ret,img = camera.read()
-	#grey = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+"""
+The parameters in this fxn should be tweaked in order
+to optimally get all shades of white... Currently the approach is
+to convert to hsv color space and filter by saturation and brightness
+"""
+def get_white_contours(img):
 	hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-	
 	lower_thresh = np.array([0,0,110], dtype = "uint8")
 	upper_thresh = np.array([179,30,255], dtype="uint8")
-
 	mask = cv2.inRange(hsv, lower_thresh, upper_thresh)
 	#print(hsv[240][320])
 	#cv2.circle(img,(320,240),5,(0,0,255),-1)
-	
-	_, contours, _ = cv2.findContours(mask,
-		cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
-	contous = filter_by_area(contours,20)
-	contours = filter_by_solidity(contours,0.9)
-	contours = filter_by_ellipseness(contours,20)
 
-	if len(contours) > 0:
-		contour = max(contours, key=lambda el: cv2.contourArea(el))
-		M = cv2.moments(contour)
-		center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
-		cv2.circle(img, center, 5, (0,0,255), -1)
-	
-	cv2.imshow("blobs", img)
-	if cv2.waitKey(5) & 0xFF == ord('q'):
-		break
+	_, contours, _ = cv2.findContours(mask,
+	cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+	return contours
+
+if __name__ == "__main__":
+	AREA_THRESH = 500
+	# TODO: determine if this depends on ellipse size
+	ELLIPSENESS_THRESH = 20
+	camera = cv2.VideoCapture(0)
+	start = time()
+	while True:
+		ret,img = camera.read()
+		contours = get_white_contours(img)
+		contours = filter_by_area(contours,AREA_THRESH)
+		contours = filter_by_ellipseness(contours,ELLIPSENESS_THRESH)
+		fps = 1.0/(time()-start)
+		print("{} potholes found - {} fps".format(len(contours),fps))
+		
+		if len(contours) > 0:
+			for contour in contours:
+				M = cv2.moments(contour)
+				center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+				cv2.circle(img, center, 5, (0,0,255), -1)
+
+		cv2.imshow("blobs", img)
+		start = time()
+		if cv2.waitKey(5) & 0xFF == ord('q'):
+			break
