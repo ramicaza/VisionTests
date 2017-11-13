@@ -5,6 +5,7 @@
 import cv2
 import numpy as np
 from time import time
+import transform
 
 def filter_by_area(contours,thresh):
 	ret = []
@@ -19,8 +20,6 @@ def filter_by_ellipseness(contours,thresh):
 		real_area = cv2.contourArea(contour)
 		if real_area < 5: continue
 		ellipse, dist = cv2.fitEllipseWithError(contour)
-		#ellipse_area = 3.14159*ellipse[1][0]*ellipse[1][1]/4
-		#dist = abs(ellipse_area/real_area - 1)
 		if dist < thresh:
 			ret.append(contour)
 	return ret
@@ -35,6 +34,7 @@ def get_white_contours(img):
 	lower_thresh = np.array([0,0,110], dtype = "uint8")
 	upper_thresh = np.array([179,30,255], dtype="uint8")
 	mask = cv2.inRange(hsv, lower_thresh, upper_thresh)
+	cv2.imshow("mask", mask)
 	#print(hsv[240][320])
 	#cv2.circle(img,(320,240),5,(0,0,255),-1)
 
@@ -45,9 +45,14 @@ def get_white_contours(img):
 if __name__ == "__main__":
 	AREA_THRESH = 500
 	# TODO: determine if this depends on ellipse size
-	ELLIPSENESS_THRESH = 20
+	ELLIPSENESS_THRESH = 10
 	camera = cv2.VideoCapture(0)
 	start = time()
+
+	#This is an example of how to make and use the transform api/functor
+	t = transform.Transform(69)
+	print("Transformed point: ",t.transform(100,50))
+
 	while True:
 		ret,img = camera.read()
 		contours = get_white_contours(img)
@@ -55,11 +60,12 @@ if __name__ == "__main__":
 		contours = filter_by_ellipseness(contours,ELLIPSENESS_THRESH)
 		fps = 1.0/(time()-start)
 		print("{} potholes found - {} fps".format(len(contours),fps))
-		
+
 		if len(contours) > 0:
 			for contour in contours:
 				M = cv2.moments(contour)
 				center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+				print(center)
 				cv2.circle(img, center, 5, (0,0,255), -1)
 
 		cv2.imshow("blobs", img)
