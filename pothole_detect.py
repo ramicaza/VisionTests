@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Detects potholes using umigv™ custom opencv fitEllipseWithError func
 
@@ -6,6 +6,13 @@ import cv2
 import numpy as np
 from time import time
 import transform
+from pprint import pprint
+
+AREA_THRESH = 500
+# TODO: determine if this depends on ellipse size
+ELLIPSENESS_THRESH = 12
+# These constants were learned using linear_class.py
+COLOR_FILTER = np.array([ -418.22255414, -3099.32785661,  1919.34279313])
 
 def filter_by_area(contours,thresh):
 	ret = []
@@ -31,9 +38,10 @@ to convert to hsv color space and filter by saturation and brightness
 """
 def get_white_contours(img):
 	hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-	lower_thresh = np.array([0,0,110], dtype = "uint8")
-	upper_thresh = np.array([179,30,255], dtype="uint8")
-	mask = cv2.inRange(hsv, lower_thresh, upper_thresh)
+	dot = hsv.dot(COLOR_FILTER)
+	dot = np.clip(dot,0,1)
+	dot = dot.astype(int)
+	mask = cv2.inRange(dot,1,1)
 	cv2.imshow("mask", mask)
 	#print(hsv[240][320])
 	#cv2.circle(img,(320,240),5,(0,0,255),-1)
@@ -43,9 +51,6 @@ def get_white_contours(img):
 	return contours
 
 if __name__ == "__main__":
-	AREA_THRESH = 500
-	# TODO: determine if this depends on ellipse size
-	ELLIPSENESS_THRESH = 10
 	camera = cv2.VideoCapture(0)
 	start = time()
 
