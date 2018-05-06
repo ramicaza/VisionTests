@@ -3,17 +3,17 @@
 import cv2
 import numpy as np
 from pprint import pprint
-from sklearn.linear_model import SGDClassifier
+from sklearn.linear_model import LinearRegression
 
 X = []
 Y = []
 in_train = True
 in_pos = True
-clf = SGDClassifier()
+clf = LinearRegression()
 
 def add_instance(features):
     X.append(features)
-    Y.append(in_pos)
+    Y.append(1 if in_pos else -1)
 
 if __name__ == "__main__":
     def moused(event, x, y, flags, param):
@@ -22,8 +22,9 @@ if __name__ == "__main__":
             features = hsv[y][x]
             if in_train:
                 add_instance(np.copy(features))
+                num_pos = len(filter(lambda x: x == True,Y))
+                print("POS/NEG: {}/{}".format(num_pos,len(Y)-num_pos))
             else:
-                print(features)
                 print(clf.predict(features.reshape(1,3)))
             cv2.circle(img, (x,y), 5, (0,0,255), -1)
             cv2.imshow("image", img)
@@ -41,11 +42,11 @@ if __name__ == "__main__":
             break
         elif key == ord('n'):
             in_pos = False
+            in_train = True
         elif key == ord('p'):
             in_pos = True
+            in_train = True
         elif key == ord('t'):
-            #pprint(zip(X,Y))
-            pprint(clf.fit(X,Y).score(X,Y))
-            print('COEFFICIENT MTX:')
-            pprint(clf.coef_)
+            print(clf.fit(X,Y).score(X,Y))
+            print('params:',clf.coef_,clf.intercept_)
             in_train = False
