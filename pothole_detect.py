@@ -12,7 +12,7 @@ AREA_THRESH = 500
 # TODO: determine if this depends on ellipse size
 ELLIPSENESS_THRESH = 12
 # These constants were learned using linear_class.py
-COLOR_FILTER = np.array([ -418.22255414, -3099.32785661,  1919.34279313])
+COLOR_FILTER = np.array([0.00626744, -0.00635294,  0.0077638 , -1.122643662730205])
 
 def filter_by_area(contours,thresh):
 	ret = []
@@ -38,7 +38,9 @@ to convert to hsv color space and filter by saturation and brightness
 """
 def get_white_contours(img):
 	hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-	dot = hsv.dot(COLOR_FILTER)
+	biased = np.ones(shape=(hsv.shape[0],hsv.shape[1],4),dtype=np.uint8)
+	biased[:,:,:3] = hsv
+	dot = biased.dot(COLOR_FILTER)
 	dot = np.clip(dot,0,1)
 	dot = dot.astype(int)
 	mask = cv2.inRange(dot,1,1)
