@@ -5,10 +5,14 @@ import sys
 import os
 import keras
 from keras.models import load_model
+import json
 import numpy as np
 np.set_printoptions(suppress=True)
 
-model_name = 'keras_lane.h5'
+stats = json.load(open(os.path.join(os.getcwd(),'stats.json'), 'r'))
+means = np.array(stats['means'])
+stddevs = np.array(stats['stddevs'])
+model_name = 'keras_obstacle.h5'
 model = load_model(os.path.join(os.getcwd(),'saved_models',model_name))
 
 def moused(event, x, y, flags, param):
@@ -17,12 +21,14 @@ def moused(event, x, y, flags, param):
     if event == cv2.EVENT_MOUSEMOVE:
         cropped = img[y-s:y+s,x-s:x+s]
         cropped = cv2.cvtColor(cropped, cv2.COLOR_BGR2RGB)
-        cropped = cv2.resize(cropped,(64, 64), interpolation=cv2.INTER_CUBIC)
+        cropped = cv2.resize(cropped,(32, 32), interpolation=cv2.INTER_CUBIC)
         cropped = cropped.astype('float32') - 127.5
         cropped /= 127.5
+        cropped -= means
+        cropped /= stddevs
         cropped = np.expand_dims(cropped, axis=0)
-        pred = model.predict(cropped)[0]
-        print(pred[1] > pred[0])
+        pred = model.predict(cropped)[0][0]
+        print('clear' if pred > 0.5 else 'obstacle')
 
 img = cv2.imread(sys.argv[1],cv2.IMREAD_COLOR)
 cv2.imshow("image",img)

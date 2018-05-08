@@ -3,29 +3,41 @@
 import os
 from scipy.misc import imread
 import numpy as np
+import cv2
 
 class Data:
     def _get_images(self):
-        pos_files = []
-        neg_files = []
-        posp = os.path.join(os.getcwd(),'lanes_pos')
-        negp = os.path.join(os.getcwd(),'lanes_neg')
+        bg_files = []
+        lanes_files = []
+        potholes_files = []
+        bg_path = os.path.join(os.getcwd(),'background_train')
+        lanes_path = os.path.join(os.getcwd(),'lanes_train')
+        potholes_path = os.path.join(os.getcwd(),'potholes_train')
         X = []
         Y = []
-        for (dirpath, dirnames, filenames) in os.walk(posp):
-            pos_files.extend(filenames)
+        for (dirpath, dirnames, filenames) in os.walk(bg_path):
+            bg_files.extend(filenames)
             break
-        for (dirpath, dirnames, filenames) in os.walk(negp):
-            neg_files.extend(filenames)
+        for (dirpath, dirnames, filenames) in os.walk(lanes_path):
+            lanes_files.extend(filenames)
             break
-        for f in pos_files:
-            image = imread(os.path.join(posp, f))
-            X.append(image)
-            Y.append(1)
-        for f in neg_files:
-            image = imread(os.path.join(negp, f))
+        for (dirpath, dirnames, filenames) in os.walk(potholes_path):
+            potholes_files.extend(filenames)
+            break
+        for f in bg_files:
+            image = imread(os.path.join(bg_path, f))
             X.append(image)
             Y.append(0)
+        for f in lanes_files:
+            image = imread(os.path.join(lanes_path, f))
+            X.append(image)
+            Y.append(1)
+        for f in potholes_files:
+            image = imread(os.path.join(potholes_path, f))
+            X.append(image)
+            Y.append(2) # label pothols as
+        for i in range(len(X)):
+            X[i] = cv2.resize(X[i],(32, 32), interpolation=cv2.INTER_CUBIC)
         return np.array(X), np.array(Y)
 
     def _unison_shuffled_copies(self,a, b):
