@@ -4,13 +4,14 @@ import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D
+from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import EarlyStopping
 import data
 import numpy as np
 import os
 # np.set_printoptions(threshold=np.nan)
 
-d = data.Data().get_partitions(0.7,0.2,0.1)
+d = data.Data().get_partitions(0.8,0.1,0.1)
 (x_train, y_train), (x_valid, y_valid), (x_test,y_test) = d
 
 # Preprocess data by one-hot encoding and per-image standardizing
@@ -20,17 +21,19 @@ y_test = keras.utils.to_categorical(y_test, 2)
 
 means = np.zeros((3))
 stdevs = np.zeros((3))
+
 def std_imgs(imgs,partition):
+    global means,stddevs
     imgs = imgs.astype('float32') - 127.5
     imgs /= 127.5
     # only do stats on train partition
     if partition == 'train':
-        global means = np.mean(imgs,axis=(0,1,2))
-        global stddevs = np.std(imgs,axis=(0,1,2))
+        means = np.mean(imgs,axis=(0,1,2))
+        stddevs = np.std(imgs,axis=(0,1,2))
         print(partition,' means:',means)
         print(partition,' stddevs:',stddevs)
-        imgs -= np.mean(imgs,axis=(0,1,2))
-        imgs /= np.std(imgs,axis=(0,1,2))
+        imgs -= means
+        imgs /= stddevs
     else:
         imgs -= means
         imgs /= stddevs
@@ -42,10 +45,10 @@ x_valid = std_imgs(x_valid,'valid')
 x_test = std_imgs(x_test,'test')
 
 # Create model
-batch_size = 32
+batch_size = 1
 num_classes = 2
 epochs = 100
-data_augmentation = False
+data_augmentation = True
 model_name = 'keras_lane.h5'
 
 model = Sequential()
@@ -79,10 +82,9 @@ model.compile(loss='categorical_crossentropy',
               optimizer=opt,
               metrics=['accuracy'])
 
-
+cbs = [EarlyStopping(monitor='val_acc',patience=5,mode='max')]
 if not data_augmentation:
     print('Not using data augmentation.')
-    cbs = [EarlyStopping(monitor='val_acc',patience=3,mode='max')]
     model.fit(x_train, y_train,
     batch_size=batch_size,
     epochs=epochs,
@@ -102,7 +104,7 @@ else:
     width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
     height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
     horizontal_flip=True,  # randomly flip images
-    vertical_flip=False)  # randomly flip images
+    vertical_flip=True)  # randomly flip images
 
     # Compute quantities required for feature-wise normalization
     # (std, mean, and principal components if ZCA whitening is applied).
@@ -113,7 +115,9 @@ else:
     batch_size=batch_size),
     epochs=epochs,
     validation_data=(x_valid, y_valid),
-    workers=4)
+    callbacks=cbs,
+    workers=4,
+    shuffle=True)
 
 # Save model and weights
 model.save(os.path.join(os.getcwd(),'saved_models', model_name))

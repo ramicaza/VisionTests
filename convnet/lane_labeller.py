@@ -48,7 +48,9 @@ class GetPath:
     def moused(self,event, x, y, flags, param):
         color = (255,0,0) if self.in_pos else (0,0,255)
         if event == cv2.EVENT_LBUTTONDOWN:
-            cv2.circle(self.img, (x,y), self.rad, color, -1)
+            cv2.rectangle(self.img,
+            (x-self.rad, y-self.rad), (x+self.rad, y+self.rad),
+            color, 2)
             cv2.imshow("image", self.img)
             if self.in_pos:
                 self.path.append((x,y))
@@ -56,7 +58,9 @@ class GetPath:
                 self.negs.append((x,y))
         elif event == cv2.EVENT_MOUSEMOVE:
             cpy = self.img.copy()
-            cv2.circle(cpy, (x,y), self.rad, color, -1)
+            cv2.rectangle(cpy,
+            (x-self.rad, y-self.rad), (x+self.rad, y+self.rad),
+            color, 2)
             cv2.imshow("image", cpy)
 
 def rotate_im(image, around, angle):
