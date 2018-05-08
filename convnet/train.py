@@ -19,24 +19,10 @@ y_train = keras.utils.to_categorical(y_train, 2)
 y_valid = keras.utils.to_categorical(y_valid, 2)
 y_test = keras.utils.to_categorical(y_test, 2)
 
-means = np.zeros((3))
-stdevs = np.zeros((3))
-
 def std_imgs(imgs,partition):
     global means,stddevs
     imgs = imgs.astype('float32') - 127.5
     imgs /= 127.5
-    # only do stats on train partition
-    if partition == 'train':
-        means = np.mean(imgs,axis=(0,1,2))
-        stddevs = np.std(imgs,axis=(0,1,2))
-        print(partition,' means:',means)
-        print(partition,' stddevs:',stddevs)
-        imgs -= means
-        imgs /= stddevs
-    else:
-        imgs -= means
-        imgs /= stddevs
 
     return imgs
 
@@ -45,9 +31,10 @@ x_valid = std_imgs(x_valid,'valid')
 x_test = std_imgs(x_test,'test')
 
 # Create model
-batch_size = 1
+batch_size = 32
 num_classes = 2
 epochs = 100
+patience = 5
 data_augmentation = True
 model_name = 'keras_lane.h5'
 
@@ -82,7 +69,7 @@ model.compile(loss='categorical_crossentropy',
               optimizer=opt,
               metrics=['accuracy'])
 
-cbs = [EarlyStopping(monitor='val_acc',patience=5,mode='max')]
+cbs = [EarlyStopping(monitor='val_acc',patience=patience,mode='max')]
 if not data_augmentation:
     print('Not using data augmentation.')
     model.fit(x_train, y_train,

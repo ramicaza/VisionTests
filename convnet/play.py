@@ -8,17 +8,13 @@ from keras.models import load_model
 import numpy as np
 np.set_printoptions(suppress=True)
 
-model_name = 'keras_lane_v3.h5'
+model_name = 'keras_lane.h5'
 model = load_model(os.path.join(os.getcwd(),'saved_models',model_name))
 
 def moused(event, x, y, flags, param):
     global img
     s = 64//2
     if event == cv2.EVENT_MOUSEMOVE:
-        cpy = img.copy()
-        # cv2.rectangle(cpy, (x-s, y-s), (x+s, y+s), (255,0,0), 2)
-        # cv2.imshow("image",cpy)
-
         cropped = img[y-s:y+s,x-s:x+s]
         cropped = cv2.cvtColor(cropped, cv2.COLOR_BGR2RGB)
         cropped = cv2.resize(cropped,(64, 64), interpolation=cv2.INTER_CUBIC)
